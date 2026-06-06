@@ -1,0 +1,6 @@
+# Extractor + clustering + spec generation run on the Python standard library
+# only, so the core pipeline needs nothing here.
+#
+# These are optional, for the Neo4j and LLM-narrative paths:
+neo4j>=5.0          # loader/load_neo4j.py (omit if you only use --dry-run)
+anthropic>=0.40     # specs/generate_spec.py --llm (optional Claude narrative)

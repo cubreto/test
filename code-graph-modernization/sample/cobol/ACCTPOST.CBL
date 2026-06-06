@@ -1,0 +1,28 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. ACCTPOST.
+      *> Posts a transaction to an account (DB2 via embedded SQL).
+       ENVIRONMENT DIVISION.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+           COPY ACCTREC.
+       LINKAGE SECTION.
+       01  LK-CUST-ID         PIC 9(8).
+       01  LK-AMOUNT          PIC S9(9)V99 COMP-3.
+       PROCEDURE DIVISION USING LK-CUST-ID LK-AMOUNT.
+       MAIN-PARA.
+           EXEC SQL
+               SELECT ACCT_BALANCE INTO :ACCT-BALANCE
+               FROM ACCOUNT
+               WHERE ACCT_CUST_ID = :LK-CUST-ID
+           END-EXEC.
+           EXEC SQL
+               UPDATE ACCOUNT
+               SET ACCT_BALANCE = :ACCT-BALANCE
+               WHERE ACCT_CUST_ID = :LK-CUST-ID
+           END-EXEC.
+           EXEC SQL
+               INSERT INTO TRANSACTION
+                   (TXN_CUST_ID, TXN_AMOUNT)
+               VALUES (:LK-CUST-ID, :LK-AMOUNT)
+           END-EXEC.
+           GOBACK.

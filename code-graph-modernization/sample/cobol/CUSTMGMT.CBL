@@ -1,0 +1,32 @@
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. CUSTMGMT.
+      *> Online customer maintenance transaction (screen-driven).
+      *> Updates the customer master and posts an opening balance via ACCTPOST.
+       ENVIRONMENT DIVISION.
+       INPUT-OUTPUT SECTION.
+       FILE-CONTROL.
+           SELECT CUSTOMER-FILE ASSIGN TO CUSTFILE
+               ORGANIZATION IS INDEXED
+               ACCESS MODE IS DYNAMIC
+               RECORD KEY IS CUST-ID.
+       DATA DIVISION.
+       FILE SECTION.
+       FD  CUSTOMER-FILE.
+           COPY CUSTREC.
+       WORKING-STORAGE SECTION.
+       01  WS-OPTION          PIC X.
+       01  WS-OPEN-BALANCE    PIC S9(9)V99 COMP-3.
+       PROCEDURE DIVISION.
+       MAIN-PARA.
+           DISPLAY "CUSTOMER MAINTENANCE".
+           DISPLAY "ENTER OPTION (A=ADD U=UPDATE):".
+           ACCEPT WS-OPTION.
+           PERFORM PROCESS-CUSTOMER.
+           STOP RUN.
+
+       PROCESS-CUSTOMER.
+           READ CUSTOMER-FILE
+               INVALID KEY DISPLAY "NOT FOUND"
+           END-READ.
+           REWRITE CUSTOMER-RECORD.
+           CALL 'ACCTPOST' USING CUST-ID WS-OPEN-BALANCE.

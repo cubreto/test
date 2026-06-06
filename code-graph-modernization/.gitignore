@@ -1,0 +1,9 @@
+# Regenerable pipeline artifacts (produced by `make pipeline`)
+graph.json
+specs/out/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/

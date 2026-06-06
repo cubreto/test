@@ -1,0 +1,103 @@
+{
+  "schema": "kdm-lite",
+  "version": "0.1.0",
+  "description": "A pragmatic, property-graph subset of the OMG Knowledge Discovery Metamodel (KDM, ISO/IEC 19506) used as an open-source stand-in for the TCS MasterCraft inventory schema. Every node/edge type records its KDM origin and its expected MasterCraft counterpart so the move to the TCS environment is a remapping, not a redesign.",
+  "node_types": {
+    "Program": {
+      "description": "A compilation/deployment unit holding business logic (COBOL program, Java class).",
+      "kdm": "code:CompilationUnit / code:Module",
+      "mastercraft": "Program / Class",
+      "attrs": ["language", "source_artifact", "source_lines"]
+    },
+    "Function": {
+      "description": "A callable unit of business logic (paragraph/section, method).",
+      "kdm": "code:CallableUnit",
+      "mastercraft": "Paragraph / Method",
+      "attrs": ["source_artifact", "source_lines"]
+    },
+    "Screen": {
+      "description": "A user-interface element (BMS map, ACCEPT/DISPLAY dialog, view).",
+      "kdm": "ui:Screen (UI package)",
+      "mastercraft": "Screen / Map",
+      "attrs": ["source_artifact", "source_lines"]
+    },
+    "Copybook": {
+      "description": "A shared data structure included by programs (copybook, header, shared schema).",
+      "kdm": "code:RecordType / code:CompilationUnit",
+      "mastercraft": "Copybook / Shared Structure",
+      "attrs": ["fields", "source_artifact", "source_lines"]
+    },
+    "DataStore": {
+      "description": "A persistent data container (indexed/sequential file, DB table, queue).",
+      "kdm": "data:RelationalTable / code:StorableUnit",
+      "mastercraft": "File / Table / Queue",
+      "attrs": ["kind", "physical_name", "source_artifact", "source_lines"]
+    },
+    "Job": {
+      "description": "A batch job / scheduler step that executes programs (JCL job).",
+      "kdm": "platform:DeployedComponent / build",
+      "mastercraft": "Batch Job / JCL Step",
+      "attrs": ["source_artifact", "source_lines"]
+    },
+    "Handler": {
+      "description": "An entry point reacting to an external event (transaction, controller, event handler).",
+      "kdm": "event:Event / platform:DeployedComponent",
+      "mastercraft": "Transaction / Handler",
+      "attrs": ["source_artifact", "source_lines"]
+    }
+  },
+  "edge_types": {
+    "CALLS": {
+      "description": "Program/function statically invokes another program/function.",
+      "kdm": "action:Calls",
+      "mastercraft": "CALLS",
+      "endpoints": ["Program|Function", "Program|Function"]
+    },
+    "READS_FROM": {
+      "description": "Code reads from a data store.",
+      "kdm": "action:Reads",
+      "mastercraft": "READS_FROM",
+      "endpoints": ["Program|Function", "DataStore"]
+    },
+    "WRITES_TO": {
+      "description": "Code writes to a data store.",
+      "kdm": "action:Writes",
+      "mastercraft": "WRITES_TO",
+      "endpoints": ["Program|Function", "DataStore"]
+    },
+    "USES_COPYBOOK": {
+      "description": "Program depends on a shared data structure.",
+      "kdm": "code:Imports / code:Includes",
+      "mastercraft": "USES_COPYBOOK",
+      "endpoints": ["Program", "Copybook"]
+    },
+    "SCREEN_CALLS_PROGRAM": {
+      "description": "A UI element drives a backend program.",
+      "kdm": "ui:UIFlow",
+      "mastercraft": "SCREEN_CALLS_PROGRAM",
+      "endpoints": ["Screen", "Program"]
+    },
+    "JOB_RUNS_PROGRAM": {
+      "description": "A batch job executes a program.",
+      "kdm": "platform:executes",
+      "mastercraft": "JOB_RUNS_PROGRAM",
+      "endpoints": ["Job", "Program"]
+    },
+    "HANDLES_EVENT": {
+      "description": "A handler responds to an event/transaction.",
+      "kdm": "event:produces / consumes",
+      "mastercraft": "HANDLES_EVENT",
+      "endpoints": ["Handler", "Program"]
+    },
+    "MAPS_TO_TARGET": {
+      "description": "A source component maps to a modern target component (populated in Phase 3).",
+      "kdm": "structure:AggregatedRelationship (conceptual)",
+      "mastercraft": "MAPS_TO_TARGET",
+      "endpoints": ["*", "*"]
+    }
+  },
+  "evidence_contract": {
+    "required_on_every_element": ["source_artifact", "source_lines", "extraction_method", "confidence"],
+    "rationale": "Generated functional specs must trace every assertion to source evidence. Deterministic extractions carry high confidence; inferred ones are flagged so they can be distinguished from facts."
+  }
+}

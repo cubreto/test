@@ -1,0 +1,7 @@
+      *> Account record - shared structure (KDM code:RecordType)
+       01  ACCOUNT-RECORD.
+           05  ACCT-ID            PIC 9(10).
+           05  ACCT-CUST-ID       PIC 9(8).
+           05  ACCT-TYPE          PIC X(02).
+           05  ACCT-BALANCE       PIC S9(11)V99 COMP-3.
+           05  ACCT-OPEN-DATE     PIC 9(8).

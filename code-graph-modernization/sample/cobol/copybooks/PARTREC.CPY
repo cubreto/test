@@ -1,0 +1,6 @@
+      *> Part record - shared structure (KDM code:RecordType)
+       01  PART-RECORD.
+           05  PART-ID            PIC 9(6).
+           05  PART-DESC          PIC X(40).
+           05  PART-QTY-ON-HAND   PIC 9(7).
+           05  PART-UNIT-PRICE    PIC S9(7)V99 COMP-3.

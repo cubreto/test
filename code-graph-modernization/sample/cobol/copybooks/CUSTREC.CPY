@@ -1,0 +1,7 @@
+      *> Customer master record - shared structure (KDM code:RecordType)
+       01  CUSTOMER-RECORD.
+           05  CUST-ID            PIC 9(8).
+           05  CUST-NAME          PIC X(30).
+           05  CUST-STATUS        PIC X(01).
+           05  CUST-BALANCE       PIC S9(9)V99 COMP-3.
+           05  CUST-LAST-ACTIVITY PIC 9(8).
