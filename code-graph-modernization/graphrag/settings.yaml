@@ -6,10 +6,15 @@
 
 completion_models:
   default_completion_model:
-    model_provider: openai
-    model: gpt-4.1
-    auth_method: api_key # or azure_managed_identity
-    api_key: ${GRAPHRAG_API_KEY} # set this in the generated .env file, or remove if managed identity
+    # In the Claude-on-the-web sandbox, Anthropic is the only reachable provider.
+    # LiteLLM model string is "{model_provider}/{model}" -> "anthropic/claude-sonnet-4-5".
+    # To run LOCALLY with full embeddings instead, swap to e.g.:
+    #   model_provider: openai      (model: gpt-4.1)        + keep generate_text_embeddings in workflows
+    #   model_provider: together_ai (model: meta-llama/Llama-3.3-70B-Instruct-Turbo)
+    model_provider: anthropic
+    model: claude-sonnet-4-5
+    auth_method: api_key
+    api_key: ${GRAPHRAG_API_KEY} # set in graphrag/.env (your Anthropic key in-sandbox)
     retry:
       type: exponential_backoff
 
@@ -21,6 +26,24 @@ embedding_models:
     api_key: ${GRAPHRAG_API_KEY}
     retry:
       type: exponential_backoff
+
+### Workflow selection ###
+## Explicit list overrides the built-in "standard" pipeline. This is the standard
+## pipeline MINUS generate_text_embeddings (no embeddings provider is reachable in
+## the sandbox) and MINUS extract_covariates (claims disabled). Result: full code
+## graph (entities + relationships) -> communities -> community reports, runnable
+## completion-only with Claude. Global search works off community reports (no
+## embeddings needed); local/DRIFT search would require restoring embeddings.
+## For a LOCAL full run, delete this block (or append generate_text_embeddings).
+workflows:
+  - load_input_documents
+  - create_base_text_units
+  - create_final_documents
+  - extract_graph
+  - finalize_graph
+  - create_communities
+  - create_final_text_units
+  - create_community_reports
 
 ### Document processing settings ###
 
