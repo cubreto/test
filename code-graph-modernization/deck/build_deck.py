@@ -26,6 +26,7 @@ MUTED  = RGBColor(0x8A, 0x97, 0xA3)
 EMU_W, EMU_H = Inches(13.333), Inches(7.5)
 MONO = "Consolas"
 SANS = "Calibri"
+IMGDIR = os.path.join(os.path.dirname(__file__), "img")
 
 prs = Presentation()
 prs.slide_width  = EMU_W
@@ -84,6 +85,24 @@ def content_slide(kicker, title):
     box(s, 0, 0, EMU_W, EMU_H, fill=LIGHT)
     header(s, kicker, title)
     return s
+
+
+def _png_size(path):
+    import struct
+    with open(path, "rb") as f:
+        head = f.read(26)
+    return struct.unpack(">II", head[16:24])  # (width, height)
+
+
+def picture(slide, name, left, top, width=None, height=None):
+    path = os.path.join(IMGDIR, name)
+    iw, ih = _png_size(path)
+    ar = iw / ih
+    if width is None and height is not None:
+        width = Emu(int(height * ar))
+    elif height is None and width is not None:
+        height = Emu(int(width / ar))
+    return slide.shapes.add_picture(path, left, top, width=width, height=height)
 
 
 def bullets(slide, items, x=Inches(0.6), y=Inches(1.5), w=Inches(12.1), h=Inches(5.6),
@@ -176,34 +195,11 @@ text(s, Inches(0.8), Inches(6.45), Inches(11.7), Inches(0.5),
 # =========================================================================
 # 3. ARCHITECTURE / PIPELINE
 # =========================================================================
-s = content_slide("Architecture", "One pipeline, four stages, evidence end-to-end")
-stages = [
-    ("Legacy source", "COBOL · copybooks · JCL · SQL", SLATE),
-    ("[1] Extractor", "heuristic now →\nMasterCraft adapter later", TEAL),
-    ("[2] KDM-lite graph", "typed nodes + edges\n+ source-line evidence", NAVY),
-    ("[3] Cluster", "functional-area\ndetection", TEAL),
-    ("[4] Grounded specs", "evidence-cited\nmarkdown specs", NAVY),
-]
-x = Inches(0.55); y = Inches(2.1); bw = Inches(2.28); bh = Inches(1.7); gap = Inches(0.18)
-for i, (t, sub, col) in enumerate(stages):
-    bx = x + i * (bw + gap)
-    box(s, bx, y, bw, bh, fill=WHITE, line=col, line_w=2.0)
-    box(s, bx, y, bw, Pt(7), fill=col)
-    text(s, bx + Inches(0.12), y + Inches(0.18), bw - Inches(0.24), Inches(0.6),
-         [[(t, 14, col, True)]], align=PP_ALIGN.CENTER)
-    text(s, bx + Inches(0.12), y + Inches(0.72), bw - Inches(0.24), Inches(0.9),
-         [[(line, 11, SLATE)] for line in sub.split("\n")],
-         align=PP_ALIGN.CENTER, space_after=2)
-    if i < len(stages) - 1:
-        text(s, bx + bw - Inches(0.02), y + Inches(0.6), Inches(0.22), Inches(0.5),
-             [[("▶", 16, AMBER, True)]], align=PP_ALIGN.CENTER)
-bullets(s, [
-    ("Branch at [2]: load into Neo4j for interactive Cypher / GDS, and run GraphRAG + simple-RAG over the same corpus.", 0),
-    ("Core path is stdlib-only — no DB, no pip — so it runs anywhere, including locked-down sandboxes.", 0, GREEN, True),
-], y=Inches(4.35), gap=10)
-box(s, Inches(0.6), Inches(6.4), Inches(12.1), Inches(0.6), fill=LIGHT, line=TEAL)
-text(s, Inches(0.8), Inches(6.48), Inches(11.7), Inches(0.45),
-     [[("Output  →  functional specs + integration points  →  modernization backlog (next phase)", 14, NAVY, True)]])
+s = content_slide("Architecture", "One pipeline, evidence end-to-end")
+# rendered diagram (deck/img/architecture.png) — height-bound, centered
+ph = Inches(6.0)
+pic = picture(s, "architecture.png", Inches(0), Inches(1.35), height=ph)
+pic.left = Emu(int((EMU_W - pic.width) / 2))
 
 # =========================================================================
 # 4. KDM-LITE SCHEMA
@@ -289,6 +285,26 @@ text(s, Inches(0.85), Inches(4.9), Inches(11.6), Inches(1.85),
        ("   — reporting depends on the posting area's data", 13, SLATE)],
       [("These cross-cluster dependencies are the contracts and risks to manage when you carve the estate.", 13, SLATE, False, SANS, True)]],
      space_after=8, line_spacing=1.05)
+
+# =========================================================================
+# 6b. THE GRAPH ITSELF (rendered from graph.json)
+# =========================================================================
+s = content_slide("The code knowledge graph", "Extracted from the sample estate — graph.json")
+picture(s, "code_graph.png", Inches(0.2), Inches(1.5), height=Inches(5.6))
+gx = Inches(8.6); gw = Inches(4.5)
+box(s, gx, Inches(1.55), gw, Inches(5.45), fill=WHITE, line=RGBColor(0xD5,0xDD,0xE3))
+text(s, gx + Inches(0.22), Inches(1.72), gw - Inches(0.44), Inches(5.2),
+     [[("How to read it", 15, NAVY, True)],
+      [("Colour", 13, TEAL, True), (" = functional area (label-propagation cluster).", 13, SLATE)],
+      [("Shape", 13, TEAL, True), (" = KDM-lite node type — program (■), datastore (●), screen (▲), copybook (◆), job (⬣).", 13, SLATE)],
+      [("Thin edges", 13, TEAL, True), (" = typed dependencies within an area (CALLS / READS_FROM / WRITES_TO / USES_COPYBOOK).", 13, SLATE)],
+      [("Bold red edges", 13, RGBColor(0xC0,0x39,0x2E), True),
+       (" = cross-area integration contracts:", 13, SLATE)],
+      [("    CUSTMGMT → ACCTPOST", 12, NAVY, True, MONO)],
+      [("    DAILYRPT → ACCOUNT", 12, NAVY, True, MONO)],
+      [("These are the seams that drive modernization sequencing and risk.", 13, SLATE, False, SANS, True)],
+      [("Every node & edge links to source_artifact : lines.", 12, GREEN, True)]],
+     space_after=9, line_spacing=1.05)
 
 # =========================================================================
 # 7. THREE AI PATHS
