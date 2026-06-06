@@ -1,9 +1,20 @@
+# Secrets — never commit
+.env
+**/.env
+
 # Regenerable pipeline artifacts (produced by `make pipeline`)
 graph.json
 specs/out/
 
-# Python
+# GraphRAG run outputs
+graphrag/output/
+graphrag/cache/
+graphrag/logs/
+graphrag/lancedb/
+
+# Python / venvs
 __pycache__/
 *.pyc
 .venv/
+.venv-graphrag/
 venv/

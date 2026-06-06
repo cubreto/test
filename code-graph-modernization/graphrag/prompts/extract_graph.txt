@@ -1,0 +1,125 @@
+
+-Goal-
+You are analyzing LEGACY SOURCE CODE (COBOL programs, copybooks, JCL jobs) for an
+application-modernization effort. Given a source artifact and a list of entity types,
+identify all software entities of those types and all dependency relationships among them.
+
+Treat code constructs as entities:
+- program: a COBOL program (PROGRAM-ID) or callable load module.
+- function: a paragraph/section or method holding business logic.
+- screen: an interactive UI (DISPLAY/ACCEPT dialog, BMS map).
+- copybook: an included shared data structure (COPY ...).
+- datastore: a persisted data container - a file (SELECT/ASSIGN, FD) or a DB table (EXEC SQL ... FROM/INTO/UPDATE).
+- job: a batch job or scheduler step (JCL JOB, EXEC PGM=).
+- handler: an entry point reacting to a transaction or event.
+
+Identify dependency relationships and STATE THE DEPENDENCY KIND explicitly at the start
+of every relationship_description, using one of these labels:
+CALLS, READS_FROM, WRITES_TO, USES_COPYBOOK, SCREEN_CALLS_PROGRAM, JOB_RUNS_PROGRAM, HANDLES_EVENT.
+
+-Steps-
+1. Identify all entities. For each identified entity, extract:
+- entity_name: the artifact/identifier name, capitalized (e.g. CUSTMGMT, CUSTOMER-FILE).
+- entity_type: One of: [{entity_types}]
+- entity_description: what the entity is and what it does, grounded in the source.
+Format: ("entity"<|><entity_name><|><entity_type><|><entity_description>)
+
+2. Identify all pairs of (source_entity, target_entity) that are clearly related (a dependency).
+For each, extract:
+- source_entity: name of the source entity from step 1
+- target_entity: name of the target entity from step 1
+- relationship_description: START with the dependency label (CALLS / READS_FROM / WRITES_TO /
+  USES_COPYBOOK / SCREEN_CALLS_PROGRAM / JOB_RUNS_PROGRAM / HANDLES_EVENT), then a short justification.
+- relationship_strength: integer 1-10 for how strong/certain the dependency is.
+Format: ("relationship"<|><source_entity><|><target_entity><|><relationship_description><|><relationship_strength>)
+
+3. Return a single list of all entities and relationships. Use **##** as the list delimiter.
+
+4. When finished, output <|COMPLETE|>
+
+######################
+-Examples-
+######################
+Example 1:
+Entity_types: program,screen,copybook,datastore
+Text:
+Artifact: CUSTMGMT.CBL
+Artifact type: COBOL program
+---
+       PROGRAM-ID. CUSTMGMT.
+       SELECT CUSTOMER-FILE ASSIGN TO CUSTFILE ORGANIZATION IS INDEXED.
+       FD  CUSTOMER-FILE.
+           COPY CUSTREC.
+       PROCEDURE DIVISION.
+           DISPLAY "CUSTOMER MAINTENANCE".
+           ACCEPT WS-OPTION.
+           READ CUSTOMER-FILE.
+           REWRITE CUSTOMER-RECORD.
+           CALL 'ACCTPOST' USING CUST-ID.
+######################
+Output:
+("entity"<|>CUSTMGMT<|>program<|>Online customer maintenance program that reads and updates the customer master and posts an opening balance)
+##
+("entity"<|>CUSTOMER-FILE<|>datastore<|>Indexed file holding the customer master records, assigned to CUSTFILE)
+##
+("entity"<|>CUSTREC<|>copybook<|>Shared copybook defining the customer record layout, included by CUSTMGMT)
+##
+("entity"<|>ACCTPOST<|>program<|>Account posting program invoked by CUSTMGMT)
+##
+("entity"<|>CUSTMGMT-SCREEN<|>screen<|>Interactive DISPLAY/ACCEPT dialog driving the CUSTMGMT program)
+##
+("relationship"<|>CUSTMGMT<|>CUSTOMER-FILE<|>READS_FROM and WRITES_TO: CUSTMGMT reads and rewrites records in CUSTOMER-FILE<|>9)
+##
+("relationship"<|>CUSTMGMT<|>CUSTREC<|>USES_COPYBOOK: CUSTMGMT includes the CUSTREC copybook to define its record layout<|>8)
+##
+("relationship"<|>CUSTMGMT<|>ACCTPOST<|>CALLS: CUSTMGMT statically calls ACCTPOST to post an opening balance<|>9)
+##
+("relationship"<|>CUSTMGMT-SCREEN<|>CUSTMGMT<|>SCREEN_CALLS_PROGRAM: the interactive screen drives the CUSTMGMT program<|>6)
+<|COMPLETE|>
+
+######################
+Example 2:
+Entity_types: program,datastore,job
+Text:
+Artifact: DAILYJOB.JCL
+Artifact type: JCL batch job
+---
+//DAILYJOB JOB (ACCT),'DAILY SETTLEMENT'
+//STEP01   EXEC PGM=DAILYRPT
+//CUSTFILE DD DSN=PROD.CUSTOMER.MASTER,DISP=SHR
+
+Artifact: DAILYRPT.CBL
+Artifact type: COBOL program
+---
+       PROGRAM-ID. DAILYRPT.
+       READ CUSTOMER-FILE.
+       EXEC SQL SELECT ACCT_BALANCE INTO :WS-BAL FROM ACCOUNT END-EXEC.
+       WRITE REPORT-RECORD.
+######################
+Output:
+("entity"<|>DAILYJOB<|>job<|>Nightly settlement JCL job that executes the DAILYRPT program in STEP01)
+##
+("entity"<|>DAILYRPT<|>program<|>Batch program that reads the customer master and account balances and writes a settlement report)
+##
+("entity"<|>CUSTOMER-FILE<|>datastore<|>Customer master file read by DAILYRPT)
+##
+("entity"<|>ACCOUNT<|>datastore<|>DB2 table holding account balances, queried by DAILYRPT)
+##
+("entity"<|>REPORT-FILE<|>datastore<|>Sequential output file holding the daily settlement report)
+##
+("relationship"<|>DAILYJOB<|>DAILYRPT<|>JOB_RUNS_PROGRAM: STEP01 of DAILYJOB executes PGM=DAILYRPT<|>10)
+##
+("relationship"<|>DAILYRPT<|>CUSTOMER-FILE<|>READS_FROM: DAILYRPT reads records from CUSTOMER-FILE<|>8)
+##
+("relationship"<|>DAILYRPT<|>ACCOUNT<|>READS_FROM: DAILYRPT selects ACCT_BALANCE from the ACCOUNT table via embedded SQL<|>8)
+##
+("relationship"<|>DAILYRPT<|>REPORT-FILE<|>WRITES_TO: DAILYRPT writes report records to REPORT-FILE<|>8)
+<|COMPLETE|>
+
+######################
+-Real Data-
+######################
+Entity_types: {entity_types}
+Text: {input_text}
+######################
+Output:
